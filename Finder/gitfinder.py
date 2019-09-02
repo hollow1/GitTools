@@ -4,6 +4,7 @@
 Finder is part of https://github.com/internetwache/GitTools
 
 Developed and maintained by @gehaxelt from @internetwache
+updated by  @no_kriminality
 
 Use at your own risk. Usage might be illegal in certain circumstances.
 Only for educational purposes!
@@ -14,29 +15,44 @@ from functools import partial
 from multiprocessing import Pool
 from urllib.request import urlopen
 from urllib.error import HTTPError
+import concurrent.futures
+import asyncio
 import sys
+import time
+import requests
 
 
-def findgitrepo(output_file, domains):
-    domain = domains.strip()
 
-    try:
-        # Try to download http://target.tld/.git/HEAD
-        with urlopen(''.join(['http://', domain, '/.git/HEAD']), timeout=5) as response:
-            answer = response.read(200).decode()
 
-    except HTTPError:
-        return
 
-    # Check if refs/heads is in the file
-    if 'refs/heads' not in answer:
-        return
+def findgitrepos(domains, out_file):
+    now = time.time()
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=20)
+    loop = asyncio.get_event_loop()
 
-    # Write match to output_file
-    with open(output_file, 'a') as file_handle:
-        file_handle.write(''.join([domain, '\n']))
 
-    print(''.join(['[*] Found: ', domain]))
+    async def check_domains(domains):
+
+        def single_domain(domain):
+            domain = domain.strip()
+            try:
+                r = requests.get(''.join(['http://', domain, '/.git/HEAD']), timeout=5)
+                r = r.text
+            except:
+                r = ''
+            if 'refs/heads' not in r:
+               # print (domain + " NOT FOUND")
+                return (domain,'Not found')
+            else:
+                print (domain, " FOUND")
+                with open(out_file, 'a') as file_handle:
+                    file_handle.write(''.join([domain, '\n']))
+                return (domain + 'Found')
+        futures = [loop.run_in_executor(executor,single_domain, domain) for domain in domains]
+        await asyncio.wait(futures)
+
+    loop.run_until_complete(check_domains(domains))
+
 
 
 def read_file(filename):
@@ -49,6 +65,7 @@ def main():
 # Finder is part of https://github.com/internetwache/GitTools
 #
 # Developed and maintained by @gehaxelt from @internetwache
+# v2 is implemented by @no_kriminality
 #
 # Use at your own risk. Usage might be illegal in certain circumstances.
 # Only for educational purposes!
@@ -59,26 +76,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--inputfile', default='input.txt', help='input file')
     parser.add_argument('-o', '--outputfile', default='output.txt', help='output file')
-    parser.add_argument('-t', '--threads', default=200, help='threads')
     args = parser.parse_args()
 
     domain_file = args.inputfile
     output_file = args.outputfile
-    try:
-        max_processes = int(args.threads)
-    except ValueError as err:
-        sys.exit(err)
 
-    try:
-        domains = read_file(domain_file)
-    except FileNotFoundError as err:
-        sys.exit(err)
+    d = read_file(domain_file)
+    findgitrepos(d, output_file)
 
-    fun = partial(findgitrepo, output_file)
-    print("Scanning...")
-    with Pool(processes=max_processes) as pool:
-        pool.map(fun, domains)
-    print("Finished")
+
 
 if __name__ == '__main__':
     main()

@@ -21,8 +21,6 @@ optional arguments:
                         input file
   -o OUTPUTFILE, --outputfile OUTPUTFILE
                         output file
-  -t THREADS, --threads THREADS
-                        threads
 ```
 
 The input file should contain the targets one per line.

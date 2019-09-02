@@ -22,6 +22,7 @@ $ ./gitfinder.py -h
 # Finder is part of https://github.com/internetwache/GitTools
 #
 # Developed and maintained by @gehaxelt from @internetwache
+# updated by @no_kriminality
 #
 # Use at your own risk. Usage might be illegal in certain circumstances.
 # Only for educational purposes!
@@ -35,8 +36,7 @@ optional arguments:
                         input file
   -o OUTPUTFILE, --outputfile OUTPUTFILE
                         output file
-  -t THREADS, --threads THREADS
-                        threads
+
 ```
 
 The input file should contain the targets one per line.
